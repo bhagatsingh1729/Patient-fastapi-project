@@ -35,6 +35,14 @@ class Patient(BaseModel):
         else:
             return 'Obese'
         
+class PatientUpdated(BaseModel):
+
+    name: Annotated[Optional[str], Field(..., description='Name of the patient')]
+    city: Annotated[Optional[str], Field(..., description='City where the patient is living')]
+    age: Annotated[Optional[int], Field(..., gt=0, lt=120, description='Age of the patient')]
+    gender: Annotated[Optional[Literal['male', 'female', 'others']], Field(..., description='Gender of the patient')]
+    height: Annotated[Optional[float], Field(..., gt=0, description='Height of the patient in mtrs')]
+    weight: Annotated[Optional[float], Field(..., gt=0, description='Weight of the patient in kgs')]
 
 
 
@@ -109,5 +117,30 @@ def create_patient(patient: Patient):
 
     return JSONResponse(status_code=201, content={'message':'patient created successfully'})
 
+@app.put("/edit/{patient_id}")
+def update_patient(patient_id:str,patient_update:PatientUpdated):
+    data = load_data()
 
+    if patient_id not in data:
+        raise HTTPException(status_code=404,detail={"message":"data does'nt exist"})
+    existing_data = data[patient_id] #consist of only existing data value not id
+
+    updated_info = patient_update.model_dump(exclude_unset=True) #updated info in json format
+
+    for key,value in updated_info.items():
+        existing_data[key] = value #updating the values 
+
+    #existing_patient_info -> pydantic object -> updated bmi + verdict
+    existing_data['id'] = patient_id
+    patient_pydantic_obj = Patient(**existing_data)
+    #-> pydantic object -> dict
+    existing_data = patient_pydantic_obj.model_dump(exclude = 'id') #now the existing data consist of bmi and verdic excluding id ,format:Json
+
+    # add this dict to data
+    data[patient_id] = existing_data
+    
+    #save data
+    save_data(data)
+
+    return JSONResponse(status_code=200,content={'message':'patient successful updated'})
 

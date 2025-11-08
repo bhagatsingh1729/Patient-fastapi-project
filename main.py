@@ -37,12 +37,12 @@ class Patient(BaseModel):
         
 class PatientUpdated(BaseModel):
 
-    name: Annotated[Optional[str], Field(..., description='Name of the patient')]
-    city: Annotated[Optional[str], Field(..., description='City where the patient is living')]
-    age: Annotated[Optional[int], Field(..., gt=0, lt=120, description='Age of the patient')]
-    gender: Annotated[Optional[Literal['male', 'female', 'others']], Field(..., description='Gender of the patient')]
-    height: Annotated[Optional[float], Field(..., gt=0, description='Height of the patient in mtrs')]
-    weight: Annotated[Optional[float], Field(..., gt=0, description='Weight of the patient in kgs')]
+    name: Annotated[Optional[str], Field(default=None)]
+    city: Annotated[Optional[str], Field(default=None)]
+    age: Annotated[Optional[int], Field( gt=0, lt=120,default=None)]
+    gender: Annotated[Optional[Literal['male', 'female', 'others']], Field(default=None)]
+    height: Annotated[Optional[float], Field(gt=0,default=None)]
+    weight: Annotated[Optional[float], Field(gt=0,default = None)]
 
 
 
@@ -144,3 +144,15 @@ def update_patient(patient_id:str,patient_update:PatientUpdated):
 
     return JSONResponse(status_code=200,content={'message':'patient successful updated'})
 
+@app.delete("/delete/{patient_id}")
+def delete_data(patient_id:str):
+    data = load_data()
+
+    if patient_id not in data:
+        raise HTTPException(status_code=404,detail={"message":"data not found"})
+    
+    del data[patient_id]
+
+    save_data(data)
+
+    return JSONResponse(status_code=200,content={"message":f"data of {patient_id} deleted"})
